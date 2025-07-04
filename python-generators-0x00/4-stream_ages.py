@@ -52,7 +52,9 @@ def average_age():
 
     if count == 0:
         return 0
-    return total_age / count
+    avr_age = total_age / count
+    print(f"Average age of users: {avr_age:.2f}")
+    return avr_age
 
 
 if __name__ == "__main__":
