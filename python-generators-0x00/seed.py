@@ -65,7 +65,7 @@ def create_table(cnx):
         user_id CHAR(36) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) NOT NULL UNIQUE,
-        age DECIMAL NOT NULL,
+        age INT NOT NULL,
         INDEX idx_users_email (email),
         INDEX idx_users_user_id (user_id)
       )
