@@ -38,8 +38,8 @@ def paginate_users(page_size, offset=0):
   
   try:
     cursor.execute(query, (page_size, offset))
-    users = cursor.fetchall()
-    return users
+    rows = cursor.fetchall()
+    return rows
   except Error as err:
     print(f"Error: {err}")
     return []

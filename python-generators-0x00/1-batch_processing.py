@@ -1,15 +1,17 @@
 import mysql.connector as connector
 from mysql.connector import errorcode, Error
 
+config = {
+  'user': 'prodev',
+  'password': 'password123',
+  'host': 'localhost',
+  'database': 'ALX_prodev'
+}
+
 def connect_db():
   """Connect to database and return the connection object."""
   try:
-    cnx = connector.connect(
-      user='prodev', 
-      password='password123',
-      host='localhost',
-      database='ALX_prodev'
-    )
+    cnx = connector.connect(**config)
 
     if cnx.is_connected():
       return cnx
@@ -44,9 +46,8 @@ def stream_users_in_batches(batch_size):
 def batch_processing(batch_size):
   """Process users in batches and print them."""
   for batch in stream_users_in_batches(batch_size):
+    batch = [user for user in batch if user['age'] >= 25]  # Filter users with age >= 25
     for user in batch:
-      if user['age'] < 25:
-        continue
       print(user)
 
 if __name__ == "__main__":
