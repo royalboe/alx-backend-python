@@ -3,14 +3,16 @@ from mysql.connector import errorcode, Error
 import uuid
 import csv
 
+
+config = {
+  'user':'prodev', 
+  'password':'password123',
+  'host':'localhost',
+}
 def connect_db():
   """Connect to the MySQL engine and return the connection object."""
   try:
-    cnx = connector.connect(
-      user='prodev', 
-      password='password123',
-      host='localhost'
-      )
+    cnx = connector.connect(**config)
     if cnx.is_connected():
       print("Connection successful")
       # print("Connection successful", cnx.server_info)
@@ -25,6 +27,7 @@ def connect_db():
 def create_database(cnx):
   """Create the ALX_prodev database if it does not exist."""
   try:
+    # A cursor is a control structure that lets you execute SQL commands and fetch results from the database connection
     cursor = cnx.cursor()
     cursor.execute("CREATE DATABASE IF NOT EXISTS ALX_prodev")
     print("Database ALX_prodev is present.")
@@ -35,12 +38,8 @@ def create_database(cnx):
 def connect_to_prodev():
   """Connect to the ALX_prodev database."""
   try:
-    cnx = connector.connect(
-      user='prodev', 
-      password='password123',
-      host='localhost',
-      database='ALX_prodev'
-      )
+    config['database'] = 'ALX_prodev'  # Set the database to connect to
+    cnx = connector.connect(**config)
     if cnx.is_connected():
       # print("Connected to ALX_prodev database.")
       return cnx
@@ -75,7 +74,15 @@ def create_table(cnx):
     print("Table user_data created successfully.")
     cursor.close()
   except Error as err:
-    print(f'Error creating table: {err}')
+    if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+      print("Table user_data already exists.")
+    # Handle other errors
+    if err.errno == errorcode.ER_BAD_FIELD_ERROR:
+      print("Error: Bad field in the table definition.")
+    elif err.errno == errorcode.ER_PARSE_ERROR:
+      print("Error: Parse error in the SQL statement.")
+    else:
+      print(f'Error creating table: {err}')
 
 def insert_data(connection, data):
   """Insert data into the users table."""
