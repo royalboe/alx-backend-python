@@ -26,7 +26,7 @@ def connect_db():
             print(err)
     return None
 
-def stream_users_ages():
+def stream_user_ages():
     """Generator function to fetch user ages from the user_data table."""
     connection = connect_db()
     if not connection:
