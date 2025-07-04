@@ -43,7 +43,7 @@ def stream_users():
 if __name__ == "__main__":
   from itertools import islice
 
-  # iterate over the generator function and print only the first 6 rows
+  # iterate over the generator function and print only the first 10 rows
 
-  for user in islice(stream_users(), 6):
+  for user in islice(stream_users(), 10):
       print(user)
