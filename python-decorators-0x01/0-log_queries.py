@@ -1,15 +1,16 @@
 import sqlite3
+from datetime import datetime
 
 
 def log_queries(func):
   def wrapper(*args, **kwargs):
     result = func(*args, **kwargs)
     if kwargs and args:
-      print(f"Function {func.__name__} called with arguments: {args} and keyword arguments: {kwargs}")
+      print(f"{datetime.now()}: {args} and keyword arguments: {kwargs}")
     elif kwargs:
-      print(f"Function {func.__name__} called with keyword arguments: {kwargs}")
+      print(f"{datetime.now()}: keyword arguments: {kwargs}")
     else:
-      print(f"Function {func.__name__} called with arguments: {args}")
+      print(f"{datetime.now()}: {args}")
     return result
   return wrapper
 
