@@ -1,17 +1,25 @@
 import sqlite3
 from datetime import datetime
+import functools
+import logging
 
+# Configure logging to log to a file
+logging.basicConfig(
+   level=logging.INFO, 
+   format='%(asctime)s - %(levelname)s - %(message)s', 
+   handlers=[
+       logging.FileHandler('db_queries.log'),
+       logging.StreamHandler()
+   ],
+)
 
 def log_queries(func):
+  @functools.wraps(func)  # Preserve the original function's name and docstring
   def wrapper(*args, **kwargs):
-    result = func(*args, **kwargs)
-    if kwargs and args:
-      print(f"{datetime.now()}: {args} and keyword arguments: {kwargs}")
-    elif kwargs:
-      print(f"{datetime.now()}: keyword arguments: {kwargs}")
-    else:
-      print(f"{datetime.now()}: {args}")
-    return result
+    query = kwargs.get('query') or (args[0] if args else "")
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logging.info(f"Executing query: {query} at {timestamp}")
+    return func(*args, **kwargs)    
   return wrapper
 
 def populate_db():
@@ -40,7 +48,7 @@ def fetch_all_users(query):
 
 populate_db()
 
-users = fetch_all_users("SELECT * FROM users")
+users = fetch_all_users(query="SELECT * FROM users")
 
 if __name__ == "__main__":
     print(users)

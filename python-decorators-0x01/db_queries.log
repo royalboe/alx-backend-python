@@ -1,0 +1,2 @@
+2025-07-08 15:29:40,806 - INFO - Executing query: SELECT * FROM users at 2025-07-08 15:29:40
+2025-07-08 15:29:58,779 - INFO - Executing query: SELECT * FROM users at 2025-07-08 15:29:58
