@@ -17,7 +17,7 @@ def with_db_connection(func: Callable) -> Callable:
     def wrapper_connect(*args: Any, **kwargs: Any) -> Any:
         conn = sqlite3.connect('users.db')
         try:
-            result = func(conn=conn, *args, **kwargs)
+            result = func(conn=conn, **args, **kwargs)
         finally:
             conn.close()
         return result
