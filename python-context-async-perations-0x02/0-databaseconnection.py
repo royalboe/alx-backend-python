@@ -82,7 +82,14 @@ password = 'password123'
 host = 'localhost'
 database = 'ALX_prodev'
 
-with DatabaseConnection(database, user, password) as cursor:
+
+def populate_db(cur: connector.cursor.MySQLCursor) -> None:
+    """
+    Creates the users table if it does not exist and populates it only if empty.
+
+    Args:
+        cur: MySQL cursor object to execute queries.
+    """
     create_table_query = """
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -92,12 +99,21 @@ with DatabaseConnection(database, user, password) as cursor:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
+    cur.execute(create_table_query)
+    # Check if table already has data
+    cur.execute("SELECT COUNT(*) FROM users;")
+    row_count = cur.fetchone()[0]
+    if row_count == 0:
+        print("Table is empty. Populating database...")
+        cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Alice', 30, 'alice@mail.com'))
+        cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Bob', 25, 'bob@mail.com'))
+        print("Database populated successfully.")
+    else:
+        print("Table already has data. Skipping population.")
 
-    cursor.execute(create_table_query)
 
-    # Populate DB
-    # cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Alice', 30, 'alice@mail.com'))
-    # cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Bob', 25, 'bob@mail.com'))
+with DatabaseConnection(database, user, password) as cursor:
+    populate_db(cursor)
 
     # Query tp fetch DB content
     query = "SELECT * FROM users;"
