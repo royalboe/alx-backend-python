@@ -2,7 +2,7 @@ import mysql.connector as connector
 from mysql.connector import Error
 from typing import Any
 
-class DatabaseConnection:
+class ExecuteQuery:
     """
         Context manager for managing a MySQL database connection.
 
@@ -20,6 +20,7 @@ class DatabaseConnection:
                 db_name (str): Name of the database to connect to.
                 db_user (str): Username for authentication.
                 db_password (str): Password for authentication.
+                query (str): Query to execute
                 db_port (int, optional): Port number for MySQL. Defaults to 3306.
                 db_host (str, optional): Hostname or IP address. Defaults to 'localhost'.
         """
@@ -50,7 +51,8 @@ class DatabaseConnection:
             )
             if self.cnx.is_connected():
                 print("Connection established successfully.")
-                return self.cnx.cursor()
+                self.cursor = self.cnx.cursor()
+                return self
         except Error as e:
             print(f'Error connecting to Database {self.db_name} on {self.db_host}: {e}')
             raise
@@ -77,48 +79,40 @@ class DatabaseConnection:
             print("Connection was not open.")
             return False  # Do not suppress exceptions
 
+    def execute_query(self, query: str, parameters: tuple[Any, ...]|None = None) -> list[tuple]:
+        """
+        Execute a query with optional parameters.
+
+        Args:
+            query (str): SQL query string.
+            parameters (Optional[Tuple[Any]]): Parameters to substitute in query.
+
+        Returns:
+            list[tuple]: Result set as list of tuples.
+        """
+        if not self.cursor:
+            print("No cursor")
+            raise RuntimeError("Cursor is not initialized.")
+
+        if parameters:
+            print("Paramters present")
+            self.cursor.execute(query, parameters)
+        else:
+            self.cursor.execute(query)
+
+        if query.strip().upper().startswith("SELECT"):
+            return self.cursor.fetchall()
+        return []
+
 user = 'prodev'
 password = 'password123'
 host = 'localhost'
 database = 'ALX_prodev'
 
-
-def populate_db(cur: connector.cursor.MySQLCursor) -> None:
-    """
-    Creates the users table if it does not exist and populates it only if empty.
-
-    Args:
-        cur: MySQL cursor object to execute queries.
-    """
-    create_table_query = """
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            age INT,
-            email VARCHAR(150) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    cur.execute(create_table_query)
-    # Check if table already has data
-    cur.execute("SELECT COUNT(*) FROM users;")
-    row_count = cur.fetchone()[0]
-    if row_count == 0:
-        print("Table is empty. Populating database...")
-        cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Alice', 30, 'alice@mail.com'))
-        cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Bob', 25, 'bob@mail.com'))
-        cursor.execute('INSERT INTO users (name, age, email) VALUES (%s, %s, %s)', ('Rob', 50, 'rob@mail.com'))
-        print("Database populated successfully.")
-    else:
-        print("Table already has data. Skipping population.")
-
-
-with DatabaseConnection(database, user, password) as cursor:
-    populate_db(cursor)
-
+with ExecuteQuery(database, user, password) as executor:
     # Query tp fetch DB content
-    query = "SELECT * FROM users;"
-    cursor.execute(query)
-    result = cursor.fetchall()
-    print(result)
+    query = "SELECT * FROM users WHERE age > %s"
+    parameter = (49,)
+    result = executor.execute_query(query, parameter)
 
+    print(result)
