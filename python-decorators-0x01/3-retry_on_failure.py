@@ -17,7 +17,7 @@ def with_db_connection(func: Callable) -> Callable:
     def wrapper_connect(*args: Any, **kwargs: Any) -> Any:
         conn = sqlite3.connect('users.db')
         try:
-            result = func(conn=conn, **args, **kwargs)
+            result = func(conn=conn, *args, **kwargs)
         finally:
             conn.close()
         return result
@@ -58,7 +58,7 @@ def retry_on_failure(retries: int, delay: int) -> Callable:
                     if attempt == retries:
                         print(f"Max retries reached persistent errors in retry: {e}")
                         raise
-                    print(f"Error processing request retrying...")
+                    print(f"Error processing request retrying in {delay} seconds...")
                     time.sleep(delay)
 
         return wrapper
@@ -66,7 +66,7 @@ def retry_on_failure(retries: int, delay: int) -> Callable:
 
 
 @with_db_connection
-@retry_on_failure(retries=3, delay=1)
+@retry_on_failure(retries=3, delay=2)
 def fetch_users_with_retry(conn: sqlite3.Connection) -> list | None:
     """
         Fetch all users from the 'users' table with automatic transaction handling and retry on failure.
@@ -78,7 +78,7 @@ def fetch_users_with_retry(conn: sqlite3.Connection) -> list | None:
             A list of tuples representing user rows if successful, otherwise None.
         """
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users")
+    cursor.execute("SELECT * FROM user")
     return cursor.fetchall()
 
 #### attempt to fetch users with automatic retry on failure
