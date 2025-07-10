@@ -10,3 +10,4 @@
 *.dist-info
 .idea
 **/*.sqbpro
+*.sqbpro
