@@ -3,6 +3,28 @@ import sqlite3
 import functools
 from typing import Callable, Any
 
+class RetryFailedException(Exception):
+    """
+    Exception raised when all retry attempts for an operation fail.
+
+    Attributes:
+        message (str): Explanation of the error and context.
+        original_exception (Exception, optional): The original exception that caused the final failure.
+    """
+
+    def __init__(self, message: str, original_exception: Exception=None):
+        """
+        Initialize RetryFailedException.
+
+        Args:
+            message (str): Human-readable error message describing the failure.
+            original_exception (Exception, optional): The last exception encountered during retries. Defaults to None.
+        """
+        super().__init__(message)
+        self.original_exception = original_exception
+        print(f"{self.original_exception}".upper())
+
+
 def with_db_connection(func: Callable) -> Callable:
     """
     A decorator that opens a SQLite database connection and closes it automatically.
@@ -48,18 +70,20 @@ def retry_on_failure(retries: int, delay: int) -> Callable:
 
         @functools.wraps(func)
         def wrapper(conn: sqlite3.Connection, *args: Any, **kwargs: Any) -> Any:
-            for attempt in range(retries + 1):
+            last_exception = None
+            for attempt in range(retries):
+                print("Attempting to process request...", attempt + 1)
                 try:
                     result = func(conn, *args, **kwargs)
                     conn.commit()
                     return result
                 except Exception as e:
                     conn.rollback()
-                    if attempt == retries:
-                        print(f"Max retries reached persistent errors in retry: {e}")
-                        raise
+                    last_exception = e
                     print(f"Error processing request retrying in {delay} seconds...")
                     time.sleep(delay)
+            else:
+                raise RetryFailedException(f"Max retries({retries}) reached persistent errors in retry", last_exception)    
 
         return wrapper
     return transactional
@@ -78,7 +102,7 @@ def fetch_users_with_retry(conn: sqlite3.Connection) -> list | None:
             A list of tuples representing user rows if successful, otherwise None.
         """
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM user")
+    cursor.execute("SELECT * FROM user;")
     return cursor.fetchall()
 
 #### attempt to fetch users with automatic retry on failure
