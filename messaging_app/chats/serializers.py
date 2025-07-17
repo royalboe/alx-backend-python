@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Message, Conversation, User
+from chats.models import Message, Conversation, User
 
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)

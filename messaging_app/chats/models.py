@@ -34,10 +34,10 @@ class User(AbstractUser):
 class Conversation(models.Model):
     participants = models.ManyToManyField(User, related_name="conversations")
     created_at = models.DateTimeField(auto_now_add=True)
-    conversation_id = models.CharField(max_length=100, unique=True)
+    conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     def __str__(self):
-        return f"Conversation {self.id}"
+        return f"Conversation {self.conversation_id}"
 
 
 class Message(models.Model):
@@ -45,7 +45,7 @@ class Message(models.Model):
     message_body = models.TextField()
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
     sent_at = models.DateTimeField(auto_now_add=True)
-    message_id = models.CharField(max_length=100, unique=True)
+    message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     class Meta:
         ordering = ["sent_at"]
