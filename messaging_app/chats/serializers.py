@@ -56,6 +56,7 @@ class MessageSerializer(serializers.ModelSerializer):
         slug_field="conversation_id",
         queryset=Conversation.objects.all()
     )
+    sender_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -68,5 +69,8 @@ class MessageSerializer(serializers.ModelSerializer):
             "sent_at",
         ]
         read_only_fields = ["sent_at"]
+
+    def get_sender_info(self, obj):
+        return f"{obj.sender.get_full_name()}"
 
 
