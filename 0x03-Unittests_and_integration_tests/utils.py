@@ -73,3 +73,8 @@ def memoize(fn: Callable) -> Callable:
         return getattr(self, attr_name)
 
     return property(memoized)
+
+if __name__ == '__main__':
+    nested_map = {"a": {"b": {"c": { "d": 56}}}}
+    new_map = access_nested_map(nested_map, ["a", "b", "c"])
+    print(new_map)
