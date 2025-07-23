@@ -52,6 +52,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), write_only=True, source="sender"
     )
+
     conversation = serializers.SlugRelatedField(
         slug_field="conversation_id",
         queryset=Conversation.objects.all()
