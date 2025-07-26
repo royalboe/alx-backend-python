@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from .models import Message, Conversation, User
+from .models import Message, Conversation, User, ConversationParticipant
 
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
+    fullname = serializers.CharField(source='get_full_name', read_only=True)
 
     class Meta:
         model = User
@@ -11,42 +12,34 @@ class UserSerializer(serializers.ModelSerializer):
             "user_id",
             "email",
             "password",
+            "confirm_password",
             "first_name",
             "last_name",
             "phone_number",
             "profile_image",
+            "role",
+            "fullname",
         ]
-        read_only_fields = ["user_id"]
+        read_only_fields = ["user_id", "created_at", "fullname"]
 
     def create(self, validated_data):
-        validated_data.pop("confirm_password")  # Remove extra field
-        user = User.objects.create_user(
-            email=validated_data.get("email"),
-            password=validated_data.get("password"),
-            first_name=validated_data.get("first_name", ""),
-            last_name=validated_data.get("last_name", ""),
-            phone_number=validated_data.get("phone_number", ""),
-            profile_image=validated_data.get("profile_image", None),
-        )
+        validated_data.pop("confirm_password")
+        password = validated_data.pop("password")
+        user = User(**validated_data)  # Remove extra field
+        user.set_password(password)
+        user.save()
         return user
 
     def validate(self, data):
         if data.get("password") != data.get("confirm_password"):
             raise serializers.ValidationError("Passwords do not match.")
         return data
-
-
-class ConversationSerializer(serializers.ModelSerializer):
-    participants = UserSerializer(many=True, read_only=True)
-    participant_ids = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), many=True, write_only=True, source='participants'
-    )
-    class Meta:
-        model = Conversation
-        fields = ['conversation_id', 'participants', 'created_at', 'participant_ids']
-        read_only_fields = ["created_at"]
-
-
+    
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email is already in use.")
+        return value
+    
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     sender_id = serializers.PrimaryKeyRelatedField(
@@ -66,11 +59,33 @@ class MessageSerializer(serializers.ModelSerializer):
             "message_body",
             "conversation",
             "sender",
+            "sender_id",
             "sent_at",
         ]
-        read_only_fields = ["sent_at"]
+        read_only_fields = ["sent_at", "message_id", "sender_info"]
 
     def get_sender_info(self, obj):
-        return f"{obj.sender.get_full_name()}"
+        return f"{obj.sender.get_sender_info()}"
 
 
+class ConversationSerializer(serializers.ModelSerializer):
+    participants = serializers.SerializerMethodField(read_only=True)
+    # participants = UserSerializer(many=True, read_only=True)
+    participant_ids = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), many=True, write_only=True, source='participants'
+    )
+    messages = MessageSerializer(many=True, read_only=True, source="messages")
+    class Meta:
+        model = Conversation
+        fields = ['conversation_id', 'participants', 'created_at', 'participant_ids', "messages"]
+        read_only_fields = ["created_at"]
+
+    def get_participants(self, obj):
+        return UserSerializer(obj.participants.all(), many=True).data
+    
+    def create(self, validated_data):
+        users = validated_data.pop("participant_ids")
+        conversation = Conversation.objects.create(**validated_data)
+        for user in users:
+            ConversationParticipant.objects.create(user=user, conversation=conversation)
+        return conversation
