@@ -12,3 +12,5 @@
 **/*.sqbpro
 *.sqbpro
 .env
+.idea/
+.vscode/

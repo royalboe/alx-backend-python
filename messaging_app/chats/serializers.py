@@ -21,8 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("confirm_password")  # Remove extra field
         user = User.objects.create_user(
-            email=validated_data["email"],
-            password=validated_data["password"],
+            email=validated_data.get("email"),
+            password=validated_data.get("password"),
             first_name=validated_data.get("first_name", ""),
             last_name=validated_data.get("last_name", ""),
             phone_number=validated_data.get("phone_number", ""),
@@ -66,7 +66,6 @@ class MessageSerializer(serializers.ModelSerializer):
             "message_body",
             "conversation",
             "sender",
-            "sender_id",
             "sent_at",
         ]
         read_only_fields = ["sent_at"]

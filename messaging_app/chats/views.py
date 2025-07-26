@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from .models import User, Message, Conversation
 from .serializers import UserSerializer, MessageSerializer, ConversationSerializer
 from rest_framework import viewsets, status, filters
