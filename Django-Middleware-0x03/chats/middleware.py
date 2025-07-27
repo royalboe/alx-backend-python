@@ -1,7 +1,7 @@
 # your_app/middleware.py
 import logging
 from datetime import datetime, time
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
@@ -29,3 +29,40 @@ class RestrictAccessByTimeMiddleware:
                 return HttpResponseForbidden("Access to chat is only allowed between 6 PM and 9 PM.")
 
         return self.get_response(request)
+    
+
+from collections import defaultdict
+
+class OffensiveLanguageMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.request_log = defaultdict(list)  # {ip: [datetime, datetime, ...]}
+        self.limit = 5  # messages
+        self.window = timedelta(minutes=1)
+
+    def __call__(self, request):
+        # Only apply to chat message creation (assume POST to /api/messages/)
+        if request.path.startswith('/api/messages/') and request.method == 'POST':
+            ip = self.get_ip(request)
+            now = datetime.now()
+
+            # Filter out timestamps older than 1 minute
+            self.request_log[ip] = [ts for ts in self.request_log[ip] if now - ts < self.window]
+
+            if len(self.request_log[ip]) >= self.limit:
+                return JsonResponse(
+                    {"error": "Rate limit exceeded. You can only send 5 messages per minute."},
+                    status=429
+                )
+
+            # Log current request timestamp
+            self.request_log[ip].append(now)
+
+        return self.get_response(request)
+
+    def get_ip(self, request):
+        # Use HTTP_X_FORWARDED_FOR if behind a proxy
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
