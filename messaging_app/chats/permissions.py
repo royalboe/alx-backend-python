@@ -15,19 +15,29 @@ class IsParticipantOfConversation(permissions.BasePermission):
     are granted access to view or interact with it.
     """
     def has_object_permission(self, request, view, obj):
-         """
-        Check if the requesting user is one of the participants in the conversation.
-
-        Args:
-            request: The HTTP request object.
-            view: The view being accessed.
-            obj: The conversation instance being checked.
-
-        Returns:
-            bool: True if the user is a participant, False otherwise.
+        """
+        Allow access only if the user is a participant in the conversation.
+        For PUT/PATCH/DELETE on messages, the user must also be the sender.
         """
 
-         return obj.participants.filter(user_id=request.user.user_id).exists()
+        user_id = request.user.user_id
+
+        # Case: object is a Conversation
+        if hasattr(obj, 'participants'):
+            return obj.participants.filter(user_id=user_id).exists()
+
+        # Case: object is a Message
+        if hasattr(obj, 'conversation'):
+            is_participant = obj.conversation.participants.filter(user_id=user_id).exists()
+
+            if request.method in ("PUT", "PATCH", "DELETE"):
+                return is_participant and obj.sender_id == user_id
+
+            return is_participant
+
+        # Deny all by default
+        return False
+
     
     def has_permission(self, request, view):
         """
@@ -41,3 +51,4 @@ class IsParticipantOfConversation(permissions.BasePermission):
             bool: True if the user is authenticated, False otherwise.
         """
         return request.user and request.user.is_authenticated
+    

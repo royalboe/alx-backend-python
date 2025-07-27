@@ -12,10 +12,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 # Create your views here.
 
-class MessageViewSet(viewsets.ModelViewSet):
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
+from .models import Message, Conversation
+from .serializers import MessageSerializer
+from .permissions import IsParticipantOfConversation
+
+class MessageViewSet(ModelViewSet):
     serializer_class = MessageSerializer
-    queryset = Message.objects.all()
-    permission_classes = [IsAuthenticated, IsOwner, IsParticipantOfConversation]
+    permission_classes = [IsParticipantOfConversation]
     pagination_class = CustomMessagePagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = MessageFilter
@@ -23,13 +30,22 @@ class MessageViewSet(viewsets.ModelViewSet):
     ordering = ["-sent_at"]
 
     def get_queryset(self):
-         return Message.objects.filter(conversation__participants__user=self.request.user).distinct()
+        return Message.objects.filter(conversation__participants__user=self.request.user).distinct()
 
+    def perform_create(self, serializer):
+        conversation = serializer.validated_data.get("conversation")
 
-class ConversationViewSet(viewsets.ModelViewSet):
+        if not conversation.participants.filter(user=self.request.user).exists():
+            return Response(
+                {"detail": "You are not a participant of this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer.save(sender=self.request.user)
+
+class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
-    queryset = Conversation.objects.all()
-    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    permission_classes = [IsParticipantOfConversation]
 
     def get_queryset(self):
         return Conversation.objects.filter(participants__user=self.request.user).distinct()
