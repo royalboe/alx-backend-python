@@ -36,6 +36,7 @@ from .filters import MessageFilter
 
 
 class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.none()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsOwner, IsParticipantOfConversation]
     pagination_class = CustomMessagePagination
@@ -65,6 +66,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         return Message.objects.filter(conversation_id=conversation_id)
 
 class ConversationViewSet(ModelViewSet):
+    queryset = Message.objects.none()
     serializer_class = ConversationSerializer
     permission_classes = [IsParticipantOfConversation]
 
