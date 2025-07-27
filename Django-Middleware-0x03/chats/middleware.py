@@ -66,3 +66,34 @@ class OffensiveLanguageMiddleware:
         if x_forwarded_for:
             return x_forwarded_for.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR')
+    
+
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Define the protected paths (you can change this as needed)
+        self.protected_paths = [
+            "/api/messages/delete/",
+            "/api/users/manage/",
+            "/api/moderation/"
+        ]
+
+    def __call__(self, request):
+        # Only check protected paths
+        for path in self.protected_paths:
+            if request.path.startswith(path):
+                if not request.user.is_authenticated:
+                    return JsonResponse(
+                        {"error": "Authentication required."},
+                        status=403
+                    )
+                # Check user role
+                role = getattr(request.user, 'role', None)
+                if role not in ['admin', 'moderator']:
+                    return JsonResponse(
+                        {"error": "You do not have permission to perform this action."},
+                        status=403
+                    )
+                break  # No need to continue checking paths
+
+        return self.get_response(request)
