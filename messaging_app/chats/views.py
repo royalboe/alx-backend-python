@@ -20,29 +20,23 @@ from .models import Message, Conversation
 from .serializers import MessageSerializer
 from .permissions import IsParticipantOfConversation
 
-class MessageViewSet(ModelViewSet):
-    serializer_class = MessageSerializer
-    permission_classes = [IsParticipantOfConversation]
-    pagination_class = CustomMessagePagination
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_class = MessageFilter
-    ordering_fields = ["sent_at"]
-    ordering = ["-sent_at"]
+from rest_framework.exceptions import PermissionDenied
 
-    def get_queryset(self):
-        return Message.objects.filter(conversation__participants__user=self.request.user).distinct()
+class MessageViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageSerializer
+    queryset = Message.objects.all()
+    permission_classes = [IsAuthenticated, IsOwner, IsParticipantOfConversation]
+    pagination_class = CustomMessagePagination
 
     def perform_create(self, serializer):
+        # Explicitly get conversation_id from validated data
+        conversation_id = serializer.validated_data.get("conversation").id
         conversation = serializer.validated_data.get("conversation")
 
-        if not conversation.participants.filter(user=self.request.user).exists():
-            return Response(
-                {"detail": "You are not a participant of this conversation."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if not conversation.participants.filter(user_id=self.request.user.user_id).exists():
+            raise PermissionDenied(detail="You are not a participant in this conversation.")
 
         serializer.save(sender=self.request.user)
-
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [IsParticipantOfConversation]
