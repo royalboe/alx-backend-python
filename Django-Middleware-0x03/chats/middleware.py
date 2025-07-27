@@ -1,6 +1,6 @@
 # your_app/middleware.py
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.http import HttpResponseForbidden, JsonResponse
 
 class RequestLoggingMiddleware:
