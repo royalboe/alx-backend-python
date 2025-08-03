@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from .manager import UnreadMessagesManager
+from .managers import UnreadMessagesManager
 
 # Create your models here.
 

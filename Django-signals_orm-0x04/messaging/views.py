@@ -56,14 +56,28 @@ class MessageView(viewsets.ModelViewSet):
         root_data['replies'] = get_replies(message)
         return Response(root_data)
     
-    @action(detail=True, methods=['get'])
+    @action(detail=False, methods=['get'])
     def unread(self, request, pk=None):
         """
         Fetch all unread messages sent to the user.
         """
-        message = self.get_object_or_404()
+        unread_messages = Message.unread.unread_for_user(user=request.user).only(
+            'id', 'sender', 'content', 'timestamp'
+        )
+        serializer = self.get_serializer(unread_messages, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        """
+        Mark message as read
+        """
+        message = self.get_object()
+        if message.receiver != request.user:
+            return Response({"detail": "Not allowed."}, status=403)
+
         message.read = True
         message.save()
-        unread_messages = Message.unread.for_user(user=request.user)
-        serializer = MessageSerializer(unread_messages, many=True)
-        return Response(serializer.data)
+        return Response({"detail": "Marked as read."}, status=status.HTTP_202_ACCEPTED)
+    
+    
