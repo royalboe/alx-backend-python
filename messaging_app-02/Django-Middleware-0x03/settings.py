@@ -153,6 +153,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
+import os
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
