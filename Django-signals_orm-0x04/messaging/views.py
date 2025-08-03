@@ -4,6 +4,8 @@ from .models import User, Message, Notification, MessageHistory
 from .serializers import UserSerializer, MessageHistorySerializer, MessageSerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from django.views.decorators.cache import cache_page
+
 # Create your views here.
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -36,7 +38,11 @@ class MessageView(viewsets.ModelViewSet):
             Message.objects.filter(sender=request.user, parent_message__isnull=True)
             .select_related('sender', 'receiver')
             .prefetch_related('replies__sender'))
-
+    
+    @cache_page(60 * 15)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @action(detail=True, methods=['get'])
     def thread(self, request, pk=None):
         """
@@ -79,5 +85,4 @@ class MessageView(viewsets.ModelViewSet):
         message.read = True
         message.save()
         return Response({"detail": "Marked as read."}, status=status.HTTP_202_ACCEPTED)
-    
     
