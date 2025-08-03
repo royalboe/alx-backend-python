@@ -28,9 +28,31 @@ class MessageView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Use prefetchrelated and selectrelated to optimize querying of messages and their replies, reducing the number of database queries.
+        Optimized query to get messages sent by the user with replies preloaded.
+        Get all the root conversations first and prefetch the replies
         """
-        qs = super().get_queryset()
-        qs = qs.select_related('sender=request.user', 'receiver')
-        qs = qs.prefetch_related('replies')
-        return qs
+        return (
+            Message
+            .objects
+            .filter(sender=self.request.user, parent_message__isnull=True)
+            .select_related('sender', 'receiver')
+            .prefetch_related('replies__sender'))
+
+    @action(detail=True, methods=['get'])
+    def thread(self, request, pk=None):
+        """
+        Recursively fetch all replies to a message (threaded view).
+        """
+        message = self.get_object()
+
+        def get_replies(msg):
+            replies = []
+            for reply in msg.replies.all():
+                reply_data = MessageSerializer(reply).data
+                reply_data['replies'] = get_replies(reply)
+                replies.append(reply_data)
+            return replies
+
+        root_data = MessageSerializer(message).data
+        root_data['replies'] = get_replies(message)
+        return Response(root_data)
