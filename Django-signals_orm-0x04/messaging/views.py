@@ -55,3 +55,15 @@ class MessageView(viewsets.ModelViewSet):
         root_data = MessageSerializer(message).data
         root_data['replies'] = get_replies(message)
         return Response(root_data)
+    
+    @action(detail=True, methods=['get'])
+    def unread(self, request, pk=None):
+        """
+        Fetch all unread messages sent to the user.
+        """
+        message = self.get_object_or_404()
+        message.read = True
+        message.save()
+        unread_messages = Message.unread.for_user(user=request.user)
+        serializer = MessageSerializer(unread_messages, many=True)
+        return Response(serializer.data)
