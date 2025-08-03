@@ -45,6 +45,6 @@ def log_message_edits(sender, instance, **kwargs):
     if instance.content != old_instance.content:
         instance.edited = True
         print(f"Message edited by {instance.sender.username}: {instance.content}")
-        MessageHistory.objects.create(message=instance, content=old_instance.content)
+        MessageHistory.objects.create(message=instance, content=old_instance.content, edited_by=instance.sender)
         # Display the message edit history in the user interface, allowing users to view previous versions of their messages.
         messages = MessageHistory.objects.filter(message=instance)
