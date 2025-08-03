@@ -6,5 +6,6 @@ from .models import User, Message, Notification
 def send_notification(sender, instance, created, **kwargs):
     if created:
         print(f"New message from {instance.sender.username} to {instance.receiver.username}: {instance.content}")
+        Notification.objects.create(user=instance.receiver, message=instance)
 
 
