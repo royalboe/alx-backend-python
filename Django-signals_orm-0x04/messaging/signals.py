@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from .models import User, Message, Notification, MessageHistory
 
@@ -48,3 +48,21 @@ def log_message_edits(sender, instance, **kwargs):
         MessageHistory.objects.create(message=instance, content=old_instance.content, edited_by=instance.sender)
         # Display the message edit history in the user interface, allowing users to view previous versions of their messages.
         messages = MessageHistory.objects.filter(message=instance)
+
+@receiver(post_delete, sender=User)
+def delete_all_user_data(sender, instance, **kwargs):
+    """
+    Signal receiver function to delete all user data when a user is deleted.
+
+    Args:
+        sender (Model): The model class that sent the signal (User).
+        instance (User): The actual instance of the User model that was deleted.
+        **kwargs: Arbitrary keyword arguments.
+
+    Returns:
+        None
+    """
+    Message.objects.filter(sender=instance).delete()
+    Message.objects.filter(receiver=instance).delete()
+    Notification.objects.filter(user=instance).delete()
+    MessageHistory.objects.filter(message__sender=instance).delete()
