@@ -21,3 +21,16 @@ class UserView(viewsets.ModelViewSet):
         request.user.delete()
         return Response({"detail": "Your account has been deleted."}, status=status.HTTP_204_NO_CONTENT)
 
+class MessageView(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Use prefetchrelated and selectrelated to optimize querying of messages and their replies, reducing the number of database queries.
+        """
+        qs = super().get_queryset()
+        qs = qs.select_related('sender=request.user', 'receiver')
+        qs = qs.prefetch_related('replies')
+        return qs
