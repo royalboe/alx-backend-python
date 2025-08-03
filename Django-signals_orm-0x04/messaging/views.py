@@ -31,10 +31,9 @@ class MessageView(viewsets.ModelViewSet):
         Optimized query to get messages sent by the user with replies preloaded.
         Get all the root conversations first and prefetch the replies
         """
+        request = self.request
         return (
-            Message
-            .objects
-            .filter(sender=self.request.user, parent_message__isnull=True)
+            Message.objects.filter(sender=request.user, parent_message__isnull=True)
             .select_related('sender', 'receiver')
             .prefetch_related('replies__sender'))
 
