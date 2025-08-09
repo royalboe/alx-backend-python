@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    image: messaging-app
+    build: .
+    command: python3 manage.py runserver 0.0.0.0:8000  # Ensure it runs with python3 as per the requirement
+    volumes:
+      - .:/messaging_app  # Mount the project directory to the container
+    ports:
+      - "8000:8000"  # Expose port 8000 for the Django app
+    depends_on:
+      - db  # Ensure that the db service starts before the web service
+    environment:
+      - MYSQL_DB=${MYSQL_DB}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=db  # The database hostname should be the service name (db)
+
+  db:
+    image: mysql:8.0  # Using MySQL 8.0 version
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}  # The default database for your Django app
+    volumes:
+      - db_data:/var/lib/mysql  # Persist MySQL data using volumes
+
+volumes:
+  db_data:
+    driver: local  # Local volume for database storage
