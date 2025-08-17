@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+
+# kurbeScript - A script to manage Kurbe configurations
+# Start the Kubernetes cluster
+echo "Starting the Kubernetes cluster with minikube..."
+minikube start
+
+# Verify the cluster is running
+# here we are using a loop to wait for the cluster to become ready.
+echo "Verifying cluster status..."
+until kubectl cluster-info &> /dev/null; do
+    echo "Waiting for the cluster to become ready..."
+    sleep 5
+done
+
+echo "Cluster is running."
+
+# Retrieve available pods
+echo "Retrieving available pods..."
+kubectl get pods
