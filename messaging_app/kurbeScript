@@ -1,6 +1,15 @@
-#!/usr/bin/bash
+#!/bin/bash
+# script to  automates the process of starting a Kubernetes cluster,
+# verifying its status, and listing the pods.
 
-# kurbeScript - A script to manage Kurbe configurations
+# Ensure minikube is installed
+if ! command -v minikube &> /dev/null
+then
+    echo "minikube is not installed. Please install minikube to continue."
+    exit 1
+fi
+echo "minikube is installed. Proceeding..."
+
 # Start the Kubernetes cluster
 echo "Starting the Kubernetes cluster with minikube..."
 minikube start
