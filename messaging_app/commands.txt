@@ -1,0 +1,8 @@
+# install the Nginx Ingress controller.
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.0/deploy/static/provider/cloud/deploy.yaml
+
+# Apply Ingress resource from the ingress.yaml file.
+kubectl apply -f ingress.yaml
+
+# Command to verify that the Ingress is created and has an address.
+kubectl get ingress messaging-app-api-ingress

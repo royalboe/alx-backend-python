@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# script to automate a blue-green deployment strategy.
+
+# Deploy the initial 'blue' version and the Service
+echo "Deploying the initial 'blue' version of the application and the service..."
+kubectl apply -f blue_deployment.yaml
+kubectl apply -f kubeservice.yaml
+
+# Verify the 'blue' version is running
+echo "Waiting for the 'blue' pods to be ready..."
+kubectl rollout status deployment/messaging-app-blue
+
+# Deploy the new 'green' version alongside the 'blue' version
+echo "'Blue' version is ready. Now deploying the 'green' version..."
+kubectl apply -f green_deployment.yaml
+
+# Verify the 'green' version is running and check its logs
+echo "Waiting for the 'green' pods to be ready..."
+kubectl rollout status deployment/messaging-app-green
+
+echo "Checking logs from the new 'green' version..."
+GREEN_POD=$(kubectl get pods -l version=green -o jsonpath="{.items[0].metadata.name}")
+if [ -n "$GREEN_POD" ]; then
+    kubectl logs -f "$GREEN_POD" --tail=20
+else
+    echo "Could not find any 'green' pods to check logs."
+fi
+
+# Switch traffic from 'blue' to 'green'
+echo "The 'green' version is running and healthy. Switching traffic..."
+# We use 'kubectl patch' to update the service selector in-place.
+kubectl patch service messaging-app-service -p '{"spec":{"selector":{"version":"green"}}}'
+
+echo "Traffic has been switched to the 'green' version."
+echo "Check your app to confirm the new version is live."
+
+echo "Blue-green deployment completed. The 'green' version is now the active version."
