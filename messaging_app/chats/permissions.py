@@ -1,54 +1,60 @@
-from rest_framework import permissions
-from .models import Conversation, Message
+from rest_framework.permissions import BasePermission
+from .models import Message, Conversation
 
-class IsOwner(permissions.BasePermission):
-    """
-    Custom permission to only allow the sender of a message to access it.
-    """
-    def has_object_permission(self, request, view, obj):
-        return request.user == obj.sender
+class IsParticipantOfConversation(BasePermission):
     
-
-class IsParticipantOfConversation(permissions.BasePermission):
-    """
-    Custom permission to ensure that only participants of a conversation 
-    are granted access to view or interact with it.
-    """
-    def has_object_permission(self, request, view, obj):
+    def is_participant(self, user, conversation):
         """
-        Allow access only if the user is a participant in the conversation.
-        For PUT/PATCH/DELETE on messages, the user must also be the sender.
-        """
-
-        user_id = request.user.user_id
-
-        # Case: object is a Conversation
-        if hasattr(obj, 'participants'):
-            return obj.participants.filter(user_id=user_id).exists()
-
-        # Case: object is a Message
-        if hasattr(obj, 'conversation'):
-            is_participant = obj.conversation.participants.filter(user_id=user_id).exists()
-
-            if request.method in ("PUT", "PATCH", "DELETE"):
-                return is_participant and obj.sender_id == user_id
-
-            return is_participant
-
-        # Deny all by default
-        return False
-
-    
-    def has_permission(self, request, view):
-        """
-        Ensure the user is authenticated before allowing access.
+        Check if the user is a participant of the conversation.
 
         Args:
-            request: The HTTP request object.
-            view: The view being accessed.
+            user: The user object.
+            conversation: The conversation object.
 
         Returns:
-            bool: True if the user is authenticated, False otherwise.
+            bool: True if the user is a participant, False otherwise.
+        """
+        return conversation.participants.filter(user_id=user.user_id).exists()
+
+    """
+    Custom permission: only allow owners of an object to access it.
+    """
+    def has_permission(self, request, view):
+        """
+          Allow access only if the user is a participant in the conversation.
+          Args:
+              request: The HTTP request object.
+              view: The view being accessed.
+
+          Returns:
+              bool: True if the user is authenticated, False otherwise.
         """
         return request.user and request.user.is_authenticated
     
+    def has_object_permission(self, request, view, obj):
+        """
+        Ensure that the user is a part of
+        Args:
+            request: The HTTP request object.
+            view: The view being accessed.
+            obj: The object being accessed.
+
+        Returns:
+            bool: True if the user is a participant of the conversation, False otherwise.
+        """
+        user = request.user
+
+        if isinstance(obj, Conversation):
+            # For conversations, check if the user is a participant
+            return self.is_participant(user, obj)
+
+        if isinstance(obj, Message):
+            # For messages, check if the user is the sender
+            if request.method.upper() in ['PUT', 'PATCH', 'DELETE']:
+                # For PUT/PATCH/DELETE, check if the user is the sender
+                if user.conversation_id != obj.conversation_id:
+                    return False
+                return self.is_participant(user, obj.conversation) and obj.sender == user
+            return self.is_participant(user, obj.conversation)
+        
+        return False

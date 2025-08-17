@@ -1,5 +1,8 @@
 FROM python:3.10
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONBUFFERED=1
+
 LABEL author="Ayomide Johnson Salami" \
       email="auomidejohnson@gmail.com"
 

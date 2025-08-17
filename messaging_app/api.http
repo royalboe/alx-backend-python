@@ -1,0 +1,44 @@
+GET http://localhost:9000/api/users/ HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU0OTk0MTM2LCJpYXQiOjE3NTQ5OTM4MzcsImp0aSI6IjE3MzBiYWE0ZTA2MzQ3Mzg4YTNhMDhiMDE2MjhmNzc2IiwidXNlcl9pZCI6IjRjYjcyMDc4LTI1ODMtNDk4Mi04NjQ0LTNjZGQ0NTdhOTU5MSJ9.h10loH7SjiC4Uu-oPQF8PfNH-Eq8xHiYCmG89Eu6bFM
+
+###
+GET http://localhost:9000/api/users/d81b494a-1e67-43ec-8310-adb9ebbc4903/ HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU0OTk0MTM2LCJpYXQiOjE3NTQ5OTM4MzcsImp0aSI6IjE3MzBiYWE0ZTA2MzQ3Mzg4YTNhMDhiMDE2MjhmNzc2IiwidXNlcl9pZCI6IjRjYjcyMDc4LTI1ODMtNDk4Mi04NjQ0LTNjZGQ0NTdhOTU5MSJ9.h10loH7SjiC4Uu-oPQF8PfNH-Eq8xHiYCmG89Eu6bFM
+
+###
+POST http://localhost:9000/api/users/ HTTP/1.1
+Content-Type: application/json
+
+{
+  "first_name": "test",
+  "last_name": "permission",
+  "email": "test-permission@test.com",
+  "role": "guest",
+  "password": "test",
+  "confirm_password": "test"
+}
+
+###
+POST http://localhost:9000/api/token/ HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "test-permission@test.com",
+  "password": "test"
+}
+
+###
+POST http://localhost:9000/admin/login/?next=/admin/ HTTP/1.1
+
+Content-Type: application/x-www-form-urlencoded
+
+email=test-permission@test.com&password=test
+
+
+###
+GET http://localhost:9000/api/example/ HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU0MTQ2MDI0LCJpYXQiOjE3NTQxNDU3MjUsImp0aSI6IjZlMDM5OTQ1NGRlNjQwMzk5M2IxY2MxNGFjOTVmYWEzIiwidXNlcl9pZCI6IjRjYjcyMDc4LTI1ODMtNDk4Mi04NjQ0LTNjZGQ0NTdhOTU5MSJ9.a1TFuyyRBRAjhGCrPbQRt_UtemXTZRD_J9MNZ-UwefI
+
+
+###
+GET http://localhost:9000/api/health/ HTTP/1.1

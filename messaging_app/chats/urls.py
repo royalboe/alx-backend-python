@@ -1,14 +1,17 @@
-from django.urls import path, include
-from .views import ConversationViewSet, MessageViewSet
-from rest_framework_nested import routers
+from .views import UserViewSet, MessageViewSet, ConversationViewSet, ExampleView, HealthCheckView
+from rest_framework.routers import DefaultRouter
 
-router = routers.DefaultRouter()
-router.register('conversations', ConversationViewSet)
+router = DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'messages', MessageViewSet)
+router.register(r'conversations', ConversationViewSet)
+# router.register(r'example', ExampleView, basename='example')
 
-conversation_router = routers.NestedDefaultRouter(router, 'conversations', lookup='conversation')
-conversation_router.register('messages', MessageViewSet, basename='conversation-messages')
+urlpatterns = router.urls
+from .views import ExampleView
+from django.urls import path, include, re_path
 
-urlpatterns = [
-    path('', include(router.urls)),
-    path('', include(conversation_router.urls)),
+urlpatterns += [
+    path('example/', ExampleView.as_view(), name='example'),
+    path('health/', HealthCheckView.as_view(), name='health'),
 ]

@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 import uuid
 
 
@@ -8,10 +8,35 @@ class Role(models.TextChoices):
     HOST = 'host', 'Host'
     ADMIN = 'admin', 'Admin'
 
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Users must have an email address')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', Role.ADMIN)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
+
+
+
+
 class User(AbstractUser):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
-    password_hash = models.CharField(max_length=128)
+    # password_hash = models.CharField(max_length=128)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
@@ -22,7 +47,9 @@ class User(AbstractUser):
     username = None
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name", "password"]
+    REQUIRED_FIELDS = ["first_name", "last_name"]
+
+    objects = CustomUserManager()
 
     class Meta:
         verbose_name = 'User'
@@ -31,8 +58,9 @@ class User(AbstractUser):
             models.Index(fields=['first_name'], name='firstname_idx'),
         ]
 
-    def __str__(self):
-        return self.email
+    @property
+    def id(self):
+        return self.user_id
     
     @property
     def is_admin(self):
@@ -41,6 +69,10 @@ class User(AbstractUser):
     @property
     def is_host(self):
         return self.role == self.Role.HOST
+    
+    @property
+    def fullname(self):
+        return f"{self.first_name} {self.last_name}"
     
     def get_sender_info(self, obj):
         return {
@@ -52,15 +84,14 @@ class User(AbstractUser):
             "profile_image": obj.sender.profile_image.url if obj.sender.profile_image else None
         }
 
-    @property
-    def fullname(self):
-        return f"{self.first_name} {self.last_name}"
-
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
     def get_short_name(self):
         return self.first_name or str(self.email).split('@')[0]
+    
+    def __str__(self):
+        return self.email
 
 
 class Conversation(models.Model):
@@ -68,14 +99,21 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    @property
+    def id(self):
+        return self.conversation_id
+    
     def __str__(self):
         return f"Conversation {self.conversation_id}"
+    def last_10_messages(self):
+        return self.messages.objects.order_by('-sent_at')[:10]
+    # .values('message_id', 'message_body', 'sent_at', 'sender__user_id', 'sender__first_name', 'sender__last_name', 'sender__profile_image', 'sender__email', 'sender__phone_number')
 
 
 class ConversationParticipant(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="participant_links")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="participants_through")
-    role = models.CharField(choices=Role.choices, default=Role.GUEST)
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.GUEST)
     joined_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     is_muted = models.BooleanField(default=False)
@@ -95,6 +133,9 @@ class Message(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    @property
+    def id(self):
+        return self.message_id
     class Meta:
         ordering = ["sent_at"]
 

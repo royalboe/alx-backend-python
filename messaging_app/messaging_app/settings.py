@@ -14,25 +14,23 @@ from pathlib import Path
 import environ
 import os
 
-# from django.conf.global_settings import AUTH_USER_MODEL, ALLOWED_HOSTS
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# SECRET_KEY = 'django-insecure-&8*7p3gk+pr&=lb+umc5w#a!^ru!@oeng2c3(uaw215@(r#s=$'
 SECRET_KEY = env.str('SECRET_KEY')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
-
 
 # Application definition
 
@@ -44,10 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django_extensions',
-    "rest_framework_simplejwt",
-    "django_filters",
+    'rest_framework_simplejwt',
     'chats',
+    'silk',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -58,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'silk.middleware.SilkyMiddleware',
 ]
 
 ROOT_URLCONF = 'messaging_app.urls'
@@ -84,11 +83,32 @@ WSGI_APPLICATION = 'messaging_app.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3'),
+    # 'mysql': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': env.str('MYSQL_DB', default='chats'),
+    #     'USER': env.str('MYSQL_USER', default='prodev'),
+    #     'PASSWORD': env.str('MYSQL_PASSWORD', default='password123'),
+    #     'HOST': env.str('DB_HOST', default='db'),
+    #     'PORT': env.int('DB_PORT', default=3306),
+    # },
+    # 'sqlite': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    # }
+    
 }
+
+# # Conditional database config
+# if DEBUG:
+#     DATABASES = {
+#         'default': env.db_url('SQLITE_URL', default='sqlite:///dev.sqlite3'),
+#         'mysql': env.db(),  # optional, available if needed
+#     }
+# else:
+#     DATABASES = {
+#         'default': env.db(),  # uses DATABASE_URL (MySQL in production)
+#     }
 
 
 # Password validation
@@ -126,25 +146,30 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+AUTH_USER_MODEL = 'chats.User'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Tells Django to use this as the user model for the project
-
-AUTH_USER_MODEL = 'chats.User'
-
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication'
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    ],
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20
 }
+
+SIMPLE_JWT = {
+  "USER_ID_FIELD": "user_id",
+}
+
+MESSAGE_DEFAULT_DAYS = env.int('MESSAGE_DEFAULT_DAYS', default=7)

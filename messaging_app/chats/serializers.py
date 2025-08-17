@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_image",
             "role",
             "fullname",
+            "is_staff",
         ]
         read_only_fields = ["user_id", "created_at", "fullname"]
 
@@ -42,6 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
     
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
+    sender_fullname = serializers.CharField(source='sender.get_full_name', read_only=True)
     sender_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), write_only=True, source="sender"
     )
@@ -50,7 +52,7 @@ class MessageSerializer(serializers.ModelSerializer):
         slug_field="conversation_id",
         queryset=Conversation.objects.all()
     )
-    sender_info = serializers.SerializerMethodField()
+    # sender_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -61,31 +63,35 @@ class MessageSerializer(serializers.ModelSerializer):
             "sender",
             "sender_id",
             "sent_at",
+            "sender_fullname",
+            # "sender_info",
         ]
         read_only_fields = ["sent_at", "message_id", "sender_info"]
 
     def get_sender_info(self, obj):
-        return f"{obj.sender.get_sender_info()}"
+        return obj.sender.get_sender_info(obj)
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    participants = serializers.SerializerMethodField(read_only=True)
-    # participants = UserSerializer(many=True, read_only=True)
+    # participants = serializers.SerializerMethodField(read_only=True)
+    participants = UserSerializer(many=True, read_only=True)
     participant_ids = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), many=True, write_only=True, source='participants'
+        queryset=User.objects.all(), many=True, source='participants', write_only=True
     )
-    messages = MessageSerializer(many=True, read_only=True, source="messages")
+    messages = MessageSerializer(many=True, read_only=True)
     class Meta:
         model = Conversation
-        fields = ['conversation_id', 'participants', 'created_at', 'participant_ids', "messages"]
+        fields = ['conversation_id', 'participants', 'participant_ids', 'created_at', 'participant_ids', "messages"]
         read_only_fields = ["created_at"]
 
-    def get_participants(self, obj):
-        return UserSerializer(obj.participants.all(), many=True).data
+    # method to use if using participants = serializers.SerialzerMethodField
+    # def get_participants(self, obj):
+    #     return UserSerializer(obj.participants.all(), many=True).data
     
     def create(self, validated_data):
-        users = validated_data.pop("participant_ids")
+        users = validated_data.pop("participants")
         conversation = Conversation.objects.create(**validated_data)
+        conversation.participants.set(users)
         for user in users:
             ConversationParticipant.objects.create(user=user, conversation=conversation)
         return conversation

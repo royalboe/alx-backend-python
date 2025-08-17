@@ -11,6 +11,7 @@ class CustomMessagePagination(PageNumberPagination):
         max_page_size (int): Maximum allowed page size that can be requested.
     """
     page_size = 20
+    page_query_param = 'page'
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -19,10 +20,16 @@ class CustomMessagePagination(PageNumberPagination):
         Customize the paginated response to include total count and pagination details.
         """
         return Response({
+            'links': {
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link(),
+                },
             'count': self.page.paginator.count,
             'total_pages': self.page.paginator.num_pages,
             'current_page': self.page.number,
-            'next': self.get_next_link(),
-            'previous': self.get_previous_link(),
+            'page_size': self.get_page_size(self.request),
+            'max_page_size': self.max_page_size,
+            'has_next': self.page.has_next(),
+            'has_previous': self.page.has_previous(),
             'results': data,
         })

@@ -1,32 +1,36 @@
-version: '3.8'
+name: messaging-app
 
 services:
   web:
-    image: messaging-app
-    build: .
+    # image: messaging-app
+    build: 
+      context: .
+      dockerfile: Dockerfile  # Specify the Dockerfile to use for building the image
+    container_name: messaging_app_web
+    volumes: 
+      - .:/app  # Mount the current directory to /app in the container
+    working_dir: /app  # Set the working directory to /app
     command: python3 manage.py runserver 0.0.0.0:8000  # Ensure it runs with python3 as per the requirement
-    volumes:
-      - .:/messaging_app  # Mount the project directory to the container
     ports:
-      - "8000:8000"  # Expose port 8000 for the Django app
+      - "9000:8000"  # Expose port 8000 for the Django app
     depends_on:
       - db  # Ensure that the db service starts before the web service
-    environment:
-      - MYSQL_DB=${MYSQL_DB}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_HOST=db  # The database hostname should be the service name (db)
+    env_file:
+      - .env  # The database hostname should be the service name (db)
 
   db:
     image: mysql:8.0  # Using MySQL 8.0 version
+    container_name: messaging_app_db
+    ports:
+      - "3306:3306"  # Expose port 3306 for MySQL
+    volumes:
+      - db_data:/var/lib/mysql  # Persist MySQL data
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DB}  # The default database for your Django app
-    volumes:
-      - db_data:/var/lib/mysql  # Persist MySQL data using volumes
 
-volumes:
-  db_data:
-    driver: local  # Local volume for database storage
+
+volumes:  
+  db_data:  # Uncomment if you want to persist MySQL data
