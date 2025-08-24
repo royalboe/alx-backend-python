@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.13'
+            args '-u root'  // run as root so you can install extras if needed
+        }
+    }
 
     environment {
         VENV = "${WORKSPACE}/venv"
