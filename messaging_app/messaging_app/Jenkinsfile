@@ -1,0 +1,103 @@
+pipeline {
+    agent any
+    
+    environment {
+        VENV = "${WORKSPACE}/venv"
+        APP_ENV = 'development'
+        DEBUG = 'True'
+        DJANGO_SETTINGS_MODULE = 'messaging_app.settings'
+        ALLOWED_HOSTS = '127.0.0.1,localhost'
+        MESSAGE_DEFAULT_DAYS = '7'
+        REGISTRY_URL = 'https://index.docker.io/v1/'
+        IMAGE_NAME = 'royalboe/messaging_app'
+
+        // Injected from Jenkins credentials (ID = 'secret')
+        SECRET_KEY = credentials('django-secret')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/royalboe/alx-backend-python.git'
+            }
+        }
+
+        stage('Set up Python environment') {
+            steps {
+                sh '''
+                    python3 -m venv "$VENV"
+                    "$VENV/bin/pip" install --upgrade pip
+                    "pwd"
+                '''
+                dir('messaging_app') {
+                    sh '''
+                        "pwd"
+                        "$VENV/bin/pip" install -r requirements.txt
+                        "$VENV/bin/pip" install pytest pytest-django pytest-html pytest-cov
+                    '''
+                }
+            }
+        }
+
+        stage('Migrate Database') {
+            steps {
+                dir('messaging_app') {
+                    sh '''
+                        "$VENV/bin/python" manage.py migrate --noinput
+                    '''
+                }
+            }
+        }
+
+        stage('Test (pytest)') {
+            steps {
+                
+                    sh '''
+                        "pwd"
+                        mkdir -p test-reports
+                        "$VENV/bin/pytest" \
+                          --ds=messaging_app.settings \
+                          --junitxml=test-reports/report.xml \
+                          --html=test-reports/report.html --self-contained-html messaging_app/tests
+                    '''
+                
+            }
+        }
+
+        stage('Publish Reports') {
+            steps {
+                // JUnit XML
+                dir('messaging_app') {
+                    junit 'test-reports/report.xml'
+                }
+                // HTML (requires "HTML Publisher" plugin)
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'messaging_app/test-reports',
+                    reportFiles: 'report.html',
+                    reportName: 'Pytest HTML Report'
+                ])
+            }
+        }
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    docker.withRegistry(env.REGISTRY_URL, 'docker-credentials') {
+                        def appImage = docker.build(IMAGE_NAME)
+                        appImage.push("${env.BUILD_NUMBER}")
+                        appImage.push("latest")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // optional: clean up venv to keep workspace small
+            sh 'rm -rf "$VENV" || true'
+        }
+    }
+}
