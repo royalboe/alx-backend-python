@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     environment {
         VENV = "${WORKSPACE}/venv"
         APP_ENV = 'development'
@@ -49,14 +49,12 @@ pipeline {
 
         stage('Test (pytest)') {
             steps {
-                dir('messaging_app') {
-                    sh '''
-                        mkdir -p test-reports
-                        "$VENV/bin/pytest" \
-                          --junitxml=test-reports/report.xml \
-                          --html=test-reports/report.html --self-contained-html
-                    '''
-                }
+                sh '''
+                    mkdir -p test-reports
+                    "$VENV/bin/pytest" \
+                        --junitxml=test-reports/report.xml \
+                        --html=test-reports/report.html --self-contained-html
+                '''
             }
         }
 
