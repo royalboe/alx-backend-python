@@ -1,0 +1,190 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define environment variables here
+        VENV = "${WORKSPACE}/venv"
+        APP_ENV = 'development'
+        DEBUG = 'True'
+        // DJANGO_SETTINGS_MODULE = 'messaging_app.settings'
+        ALLOWED_HOSTS = '127.0.0.1,localhost'
+        MESSAGE_DEFAULT_DAYS = 7
+
+        // Secrets stored in Jenkins credentials
+        // SECRET_KEY will be injected from Jenkins credentials
+        SECRET_KEY = credentials('secret')
+
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from version control
+                git branch: 'main', 
+                url: 'https://github.com/royalboe/alx-backend-python.git'
+            }
+        }
+        stage('Set up python enviroment') {
+            steps {
+                // Set up Python environment
+                sh '''
+                    python3 -m venv $VENV
+                    source $VENV/bin/activate
+                    pip install --upgrade pip
+                    pip install -r messaging_app/requirements.txt
+                '''
+            }
+        }
+        stage('Migrate Database') {
+            steps {
+                dir('messaging_app') {
+                    echo 'Migrating...'
+                    sh '''
+                        source $VENV/bin/activate
+                        python manage.py migrate --noinput
+                    '''
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                dir('messaging_app') {
+                    echo 'Testing...'
+                    sh '''
+                        source $VENV/bin/activate
+                        pytest --junitxml=messaging_app/test-reports/report.xml
+                    '''
+                
+                }
+            }
+        }
+        stage('Generate reports') {
+            steps {
+                dir('messaging_app') {
+                    echo 'Generating test report...'
+                    publishHTML([allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: './',
+                                reportFiles: 'report.xml',
+                                reportName: 'Test Report'])
+                    
+                }
+            }
+        }
+        stage('Build Docker Image and push to Docker Hub') {
+            when {
+                branch 'main'
+            }
+            steps {
+                dir('messaging_app') {
+                    withCredentials([string(credentialsId: 'dockerhub-credentials', variable: 'DOCKERHUB')]) {
+                        script {
+                            dockerImage = docker.build("royalboe/messaging_app:${env.BUILD_NUMBER}")
+                            docker.withRegistry('https://index.docker.io/v1/', $DOCKERHUB) {
+                                dockerImage.push("latest")
+                                dockerImage.push("${env.BUILD_NUMBER}")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            }
+        }
+    }
+
+
+
+// pipeline {
+//     agent any
+    
+//     environment {
+//         // Set Python version & virtual environment directory
+//         VENV = "${WORKSPACE}/venv"
+//         DJANGO_SETTINGS_MODULE = "myproject.settings"
+//     }
+
+//     stages {
+//         stage('Checkout') {
+//             steps {
+//                 git branch: 'main',
+//                     url: 'https://github.com/yourusername/your-django-app.git'
+//             }
+//         }
+
+//         stage('Setup Python Environment') {
+//             steps {
+//                 sh '''
+//                     python3 -m venv $VENV
+//                     . $VENV/bin/activate
+//                     pip install --upgrade pip
+//                     pip install -r requirements.txt
+//                 '''
+//             }
+//         }
+
+//         stage('Run Migrations') {
+//             steps {
+//                 sh '''
+//                     . $VENV/bin/activate
+//                     python manage.py migrate --noinput
+//                 '''
+//             }
+//         }
+
+//         stage('Run Tests') {
+//             steps {
+//                 sh '''
+//                     . $VENV/bin/activate
+//                     python manage.py test
+//                 '''
+//             }
+//         }
+
+//         stage('Build Docker Image') {
+//             steps {
+//                 script {
+//                     dockerImage = docker.build("your-django-app:${env.BUILD_NUMBER}")
+//                 }
+//             }
+//         }
+
+//         stage('Push Docker Image') {
+//             when {
+//                 branch 'main'
+//             }
+//             steps {
+//                 script {
+//                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
+//                         dockerImage.push("latest")
+//                         dockerImage.push("${env.BUILD_NUMBER}")
+//                     }
+//                 }
+//             }
+//         }
+
+//         stage('Deploy') {
+//             when {
+//                 branch 'main'
+//             }
+//             steps {
+//                 echo 'Deploying application...'
+//                 // You can use kubectl, docker-compose, or ansible here
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             echo 'Cleaning up...'
+//             sh 'rm -rf $VENV'
+//         }
+//         success {
+//             echo 'Pipeline completed successfully!'
+//         }
+//         failure {
+//             echo 'Pipeline failed!'
+//         }
+//     }
+// }

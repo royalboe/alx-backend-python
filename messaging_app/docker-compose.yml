@@ -2,7 +2,7 @@ name: messaging-app
 
 services:
   web:
-    # image: messaging-app
+    image: royalboe/messaging-app:v2
     build: 
       context: .
       dockerfile: Dockerfile  # Specify the Dockerfile to use for building the image
