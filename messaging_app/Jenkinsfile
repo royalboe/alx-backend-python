@@ -12,7 +12,7 @@ pipeline {
         IMAGE_NAME = 'royalboe/messaging_app'
 
         // Injected from Jenkins credentials (ID = 'secret')
-        SECRET_KEY = credentials('secret-key')
+        SECRET_KEY = credentials('django-secret')
     }
 
     stages {
