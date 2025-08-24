@@ -55,10 +55,11 @@ pipeline {
                     sh '''
                         "pwd"
                         mkdir -p test-reports
+                        cd messaging_app
                         "$VENV/bin/pytest" \
                           --ds=messaging_app.settings \
                           --junitxml=test-reports/report.xml \
-                          --html=test-reports/report.html --self-contained-html messaging_app/tests
+                          --html=test-reports/report.html --self-contained-html tests
                     '''
                 
             }
