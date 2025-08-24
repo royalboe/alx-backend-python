@@ -53,6 +53,7 @@ pipeline {
                     sh '''
                         mkdir -p test-reports
                         "$VENV/bin/pytest" \
+                          --ds=messaging_app.settings \
                           --junitxml=test-reports/report.xml \
                           --html=test-reports/report.html --self-contained-html
                     '''
