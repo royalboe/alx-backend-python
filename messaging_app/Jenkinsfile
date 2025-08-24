@@ -26,12 +26,13 @@ pipeline {
             steps {
                 sh '''
                     python3 -m venv "$VENV"
-                    "$VENV/bin/pip" install --upgrade pip
+                    'python3 -m venv venv'
+                    './venv/bin/pip install --upgrade pip'
                 '''
                 dir('messaging_app') {
                     sh '''
-                        "$VENV/bin/pip" install -r requirements.txt
-                        "$VENV/bin/pip" install pytest pytest-django pytest-html pytest-cov
+                        './venv/bin/pip install -r requirements.txt'
+                        './venv/bin/pip install pytest pytest-django pytest-html pytest-cov'
                     '''
                 }
             }
@@ -41,7 +42,7 @@ pipeline {
             steps {
                 dir('messaging_app') {
                     sh '''
-                        "$VENV/bin/python" manage.py migrate --noinput
+                        './venv/bin/python manage.py migrate --noinput'
                     '''
                 }
             }
@@ -52,7 +53,7 @@ pipeline {
                 
                     sh '''
                         mkdir -p test-reports
-                        "$VENV/bin/pytest" \
+                        "./venv/bin/pytest" \
                           --ds=messaging_app.settings \
                           --junitxml=test-reports/report.xml \
                           --html=test-reports/report.html --self-contained-html messaging_app/tests
@@ -94,7 +95,7 @@ pipeline {
     post {
         always {
             // optional: clean up venv to keep workspace small
-            sh 'rm -rf "$VENV" || true'
+            sh 'rm -rf venv || true'
         }
     }
 }
