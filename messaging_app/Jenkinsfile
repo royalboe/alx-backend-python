@@ -5,7 +5,7 @@ pipeline {
         VENV = "${WORKSPACE}/venv"
         APP_ENV = 'development'
         DEBUG = 'True'
-        DJANGO_SETTINGS_MODULE = 'messaging_app.messaging_app.settings'
+        DJANGO_SETTINGS_MODULE = 'messaging_app.settings'
         ALLOWED_HOSTS = '127.0.0.1,localhost'
         MESSAGE_DEFAULT_DAYS = '7'
         REGISTRY_URL = 'https://index.docker.io/v1/'
