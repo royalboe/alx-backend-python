@@ -1,11 +1,6 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.13'
-            args '-u root'  // run as root so you can install extras if needed
-        }
-    }
-
+    agent any
+    
     environment {
         VENV = "${WORKSPACE}/venv"
         APP_ENV = 'development'
