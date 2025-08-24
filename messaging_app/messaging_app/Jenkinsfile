@@ -33,7 +33,7 @@ pipeline {
                     sh '''
                         "pwd"
                         source $VENV/bin/activate
-                        pip install -r messaging_app/requirements.txt
+                        pip3 install -r messaging_app/requirements.txt
                         "$VENV/bin/pip" install pytest pytest-django pytest-html pytest-cov
                     '''
                 }
