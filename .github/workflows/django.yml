@@ -9,6 +9,12 @@ on:
 jobs:
   build:
     environment: django-dev
+    env:
+      DJANGO_SETTINGS_MODULE: messaging_app.settings
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      ALLOWED_HOSTS: ${{ vars.ALLOWED_HOSTS }}
+      MESSAGE_DEFAULT_DAYS: ${{ vars.MESSAGE_DEFAULT_DAYS }}
+      DEBUG: ${{ vars.DEBUG }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
