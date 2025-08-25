@@ -1,0 +1,29 @@
+#!/bin/bash
+# script to  automates the process of starting a Kubernetes cluster,
+# verifying its status, and listing the pods.
+
+# Ensure minikube is installed
+if ! command -v minikube &> /dev/null
+then
+    echo "minikube is not installed. Please install minikube to continue."
+    exit 1
+fi
+echo "minikube is installed. Proceeding..."
+
+# Start the Kubernetes cluster
+echo "Starting the Kubernetes cluster with minikube..."
+minikube start
+
+# Verify the cluster is running
+# here we are using a loop to wait for the cluster to become ready.
+echo "Verifying cluster status..."
+until kubectl cluster-info &> /dev/null; do
+    echo "Waiting for the cluster to become ready..."
+    sleep 5
+done
+
+echo "Cluster is running."
+
+# Retrieve available pods
+echo "Retrieving available pods..."
+kubectl get pods

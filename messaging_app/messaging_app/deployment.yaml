@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: messaging-app-config
+data:
+  DEBUG: 'True'  
+  MYSQL_USER: 'prodev'
+  MYSQL_DB: 'chats'
+  DB_HOST: 'db'
+  DB_PORT: '3306'
+  ALLOWED_HOSTS: '127.0.0.1,localhost'
+  MESSAGE_DEFAULT_DAYS: '7'
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: messaging-app-secret
+type: Opaque
+data:
+  DATABASE_URL: bXlzcWw6Ly9wcm9kZXY6cGFzc3dvcmQxMjNAZGI6MzMwNi9jaGF0cw==
+  MYSQL_ROOT_PASSWORD: cm9vdHBhc3N3b3Jk
+  MYSQL_PASSWORD: cGFzc3dvcmQxMjM=
+  SECRET_KEY: 'ZGphbmdvLWluc2VjdXJlLWg3dSU4MWE5JCE9X28zXyFkKDgmYjheKGQzZnBycyp2bnMwZ2Z6NDRoQGotdilvJWQj'
+              
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-app-deployment
+  labels:
+    app: messaging-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: messaging-app
+  template:
+    metadata:
+      labels:
+        app: messaging-app
+    spec:
+      containers:
+        - name: messaging-app-container
+          image: royalboe/messaging-app:v3-sqlite
+          ports:
+            - containerPort: 8000
+          envFrom:   # ✅ moved inside container spec
+            - configMapRef:
+                name: messaging-app-config
+            - secretRef:
+                name: messaging-app-secret

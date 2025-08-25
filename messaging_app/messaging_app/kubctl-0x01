@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Scaling a Kubernetes messaging-app-deployment, verifying the scale,
+# performing a basic load test, and monitoring resource usage.
+
+DEPLOYMENT_NAME="messaging-app-deployment"
+
+SERVICE_URL="http://127.0.0.1:8000"
+
+# Set a label to filter for your application's pods.
+# Replace 'app=your-django-app' with the label used in your deployment's spec.
+POD_LABEL="messaging-app"
+
+# The number of replicas to scale to.
+REPLICA_COUNT=3
+
+# Scale the Deployment
+echo "Scaling the deployment '$DEPLOYMENT_NAME' to $REPLICA_COUNT replicas..."
+kubectl scale deployment "$DEPLOYMENT_NAME" --replicas=$REPLICA_COUNT
+
+# Verify that multiple pods are running
+echo "🔍 Verifying that $REPLICA_COUNT pods are running..."
+# We use a loop to wait for the desired number of pods to be in the 'Running' state.
+while [ "$(kubectl get pods -l "$POD_LABEL" --field-selector=status.phase=Running | grep -c Running)" -lt "$REPLICA_COUNT" ]; do
+    echo "  Waiting for pods to be ready... Current count: $(kubectl get pods -l "$POD_LABEL" | grep -c Running)"
+    sleep 5
+done
+
+echo "Pods are ready! Listing all pods for verification:"
+kubectl get pods -l "$POD_LABEL"
+
+# Perform load testing on the scaled app
+echo "Performing a simple load test with 'wrk' on the scaled application..."
+echo "Target URL: $SERVICE_URL"
+
+# Send 100 connections for 30 seconds to the specified URL.
+wrk -c 100 -d 30s "$SERVICE_URL"
+
+echo "Load test completed."
+
+# Monitor Resource Usage
+echo "Monitoring resource usage for the pods using 'kubectl top'..."
+# 'kubectl top' provides CPU and memory usage. Note requires Kubernetes metrics server to be running in the cluster.
+kubectl top pod -l "$POD_LABEL"
+
+echo "Script execution finished."
